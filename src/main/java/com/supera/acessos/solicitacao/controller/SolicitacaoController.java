@@ -11,6 +11,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/solicitacoes")
 @RequiredArgsConstructor
@@ -54,4 +56,33 @@ public class SolicitacaoController {
                 solicitacaoService.renovarSolicitacao(id, usuario)
         );
     }
+    @PostMapping("/{id}/cancelar")
+    public ResponseEntity<SolicitacaoModulo> cancelar(
+            @PathVariable Long id,
+            @AuthenticationPrincipal Usuario usuario
+    ) {
+        return ResponseEntity.ok(
+                solicitacaoService.cancelarSolicitacao(id, usuario)
+        );
+    }
+
+    @GetMapping
+    public ResponseEntity<List<SolicitacaoModulo>> listarMinhasSolicitacoes(
+            @AuthenticationPrincipal Usuario usuario
+    ) {
+        List<SolicitacaoModulo> lista = solicitacaoService.listarSolicitacoesDoUsuario(usuario);
+        return ResponseEntity.ok(lista);
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<SolicitacaoModulo> detalhar(
+            @PathVariable Long id,
+            @AuthenticationPrincipal Usuario usuario
+    ) {
+        SolicitacaoModulo sol = solicitacaoService.detalharSolicitacao(id, usuario);
+        return ResponseEntity.ok(sol);
+    }
+
+
+
 }

@@ -5,6 +5,7 @@ import com.supera.acessos.usuario.entity.Usuario;
 import com.supera.acessos.modulo.entity.Modulo;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface SolicitacaoModuloRepository
@@ -15,4 +16,7 @@ public interface SolicitacaoModuloRepository
             Modulo modulo,
             Iterable status
     );
+
+    List<SolicitacaoModulo> findBySolicitante(Usuario usuario);
+
 }
