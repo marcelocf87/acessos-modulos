@@ -104,4 +104,60 @@ public class SolicitacaoModuloService {
 
         return solicitacaoRepository.save(solicitacao);
     }
+
+    private boolean isExpirada(SolicitacaoModulo solicitacao) {
+        return solicitacao.getDataExpiracao() != null &&
+                solicitacao.getDataExpiracao().isBefore(LocalDateTime.now());
+    }
+
+    private void expirarSeNecessario(SolicitacaoModulo solicitacao) {
+
+        if (!isExpirada(solicitacao)) return;
+
+        solicitacao.setStatus(StatusSolicitacao.EXPIRADA);
+
+        Usuario usuario = solicitacao.getSolicitante();
+        Modulo modulo = solicitacao.getModulo();
+
+        usuario.getModulosAtivos().remove(modulo);
+
+        usuarioRepository.save(usuario);
+        solicitacaoRepository.save(solicitacao);
+    }
+
+    public SolicitacaoModulo renovarSolicitacao(Long id, Usuario solicitante) {
+
+        SolicitacaoModulo antiga = solicitacaoRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Solicitação não encontrada"));
+
+        expirarSeNecessario(antiga);
+
+        if (antiga.getStatus() != StatusSolicitacao.EXPIRADA) {
+            throw new RuntimeException("Somente solicitações expiradas podem ser renovadas.");
+        }
+
+        Modulo modulo = antiga.getModulo();
+
+        //criar nova solicitação
+        SolicitacaoModulo nova = new SolicitacaoModulo();
+        nova.setSolicitante(solicitante);
+        nova.setModulo(modulo);
+        nova.setStatus(StatusSolicitacao.ABERTA);
+        nova.setDataSolicitacao(LocalDateTime.now());
+
+        if (modulo.isExigeAprovacaoGestor()) {
+            nova.setStatus(StatusSolicitacao.AGUARDANDO_GESTOR);
+        } else if (modulo.isExigeAprovacaoSeguranca()) {
+            nova.setStatus(StatusSolicitacao.AGUARDANDO_SEGURANCA);
+        } else {
+            nova.setStatus(StatusSolicitacao.APROVADA);
+            concederAcesso(solicitante, modulo);
+            registrarExpiracao(nova, modulo);
+            usuarioRepository.save(solicitante);
+        }
+
+        return solicitacaoRepository.save(nova);
+    }
+
+
 }

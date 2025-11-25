@@ -44,4 +44,14 @@ public class SolicitacaoController {
                 solicitacaoService.reprovarSolicitacao(id, aprovador, dto.motivo())
         );
     }
+
+    @PostMapping("/{id}/renovar")
+    public ResponseEntity<SolicitacaoModulo> renovar(
+            @PathVariable Long id,
+            @AuthenticationPrincipal Usuario usuario
+    ) {
+        return ResponseEntity.ok(
+                solicitacaoService.renovarSolicitacao(id, usuario)
+        );
+    }
 }
