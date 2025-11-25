@@ -1,9 +1,11 @@
 package com.supera.acessos.usuario.entity;
 
+import com.supera.acessos.modulo.entity.Modulo;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.util.HashSet;
+import java.util.Set;
 
 @Getter
 @Setter
@@ -31,7 +33,7 @@ public class Usuario {
     @Column(nullable = false)
     private Departamento departamento;
 
-    //fazer relacionamento com módulos ativos
+    //para fazer relacionamento com módulos ativos
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
             name = "usuarios_modulos",
@@ -39,5 +41,5 @@ public class Usuario {
             inverseJoinColumns = @JoinColumn(name = "modulo_id")
     )
 
-    private Set<Modulo> modulosAivos = new HashSet<>();
+    private Set<Modulo> modulosAtivos = new HashSet<>();
 }
