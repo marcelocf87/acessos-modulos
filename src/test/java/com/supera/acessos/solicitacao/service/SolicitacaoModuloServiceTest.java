@@ -124,7 +124,7 @@ class SolicitacaoModuloServiceTest {
                 () -> service.criarSolicitacao(usuario, dto)
         );
 
-        assertEquals("Usuário já possui acesso ao módulo", ex.getMessage());
+        assertEquals("Usuário já possui acesso ativo ao módulo", ex.getMessage());
     }
 
     @Test

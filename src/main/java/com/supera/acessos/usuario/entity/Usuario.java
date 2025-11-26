@@ -34,6 +34,7 @@ public class Usuario {
     private Departamento departamento;
 
     //para fazer relacionamento com módulos ativos
+    @Builder.Default
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
             name = "usuarios_modulos",
