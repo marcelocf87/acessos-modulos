@@ -33,7 +33,7 @@ public class JwtTokenService {
         Date expiracao = new Date(agora.getTime() + expirationMillis);
 
         return Jwts.builder()
-                .setSubject(usuario.getId().toString())
+                .setSubject(String.valueOf(usuario.getId()))
                 .claim("email", usuario.getEmail())
                 .claim("departamento", usuario.getDepartamento().name())
                 .setIssuedAt(agora)

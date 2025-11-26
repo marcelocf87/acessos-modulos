@@ -1,12 +1,14 @@
 package com.supera.acessos.solicitacao.service;
 
 import com.supera.acessos.exceptions.ApiException;
+import com.supera.acessos.modulo.dto.ModuloResumoDTO;
 import com.supera.acessos.modulo.entity.Modulo;
 import com.supera.acessos.solicitacao.dto.CriarSolicitacaoDTO;
 import com.supera.acessos.solicitacao.dto.SolicitacaoResponseDTO;
 import com.supera.acessos.solicitacao.entity.SolicitacaoModulo;
 import com.supera.acessos.solicitacao.entity.StatusSolicitacao;
 import com.supera.acessos.solicitacao.repository.SolicitacaoModuloRepository;
+import com.supera.acessos.usuario.dto.UsuarioResumoDTO;
 import com.supera.acessos.usuario.entity.Usuario;
 import com.supera.acessos.usuario.repository.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
@@ -268,11 +270,8 @@ public class SolicitacaoModuloService {
 
     public List<SolicitacaoModulo> listarSolicitacoesDoUsuario(Usuario usuario) {
 
-        // Busca todas as solicitacoes do usuario
-        List<SolicitacaoModulo> lista =
-                solicitacaoRepository.findBySolicitante(usuario);
+        List<SolicitacaoModulo> lista = solicitacaoRepository.findBySolicitante(usuario);
 
-        // Aplica expiração automática em cada uma
         lista.forEach(this::expirarSeNecessario);
 
         return lista;
@@ -283,40 +282,12 @@ public class SolicitacaoModuloService {
         SolicitacaoModulo sol = solicitacaoRepository.findById(id)
                 .orElseThrow(() -> new ApiException("Solicitação não encontrada"));
 
-        if (!sol.getSolicitante().getId().equals(usuario.getId())) {
-            throw new ApiException("Acesso negado");
+        if (sol.getSolicitante().getId() != usuario.getId()) {
+            throw new ApiException("Solicitação não pertence ao usuário");
         }
 
         expirarSeNecessario(sol);
 
         return sol;
     }
-
-    public SolicitacaoResponseDTO toDTO(SolicitacaoModulo s) {
-        return new SolicitacaoResponseDTO(
-                s.getId(),
-                new UsuarioResumoDTO(
-                        s.getSolicitante().getId(),
-                        s.getSolicitante().getNome(),
-                        s.getSolicitante().getEmail()
-                ),
-                new ModuloResumoDTO(
-                        s.getModulo().getId(),
-                        s.getModulo().getNome(),
-                        s.getModulo().isAtivo()
-                ),
-                s.getStatus(),
-                s.getDataAbertura(),
-                s.getDataAprovacao(),
-                s.getDataReprovacao(),
-                s.getDataExpiracao(),
-                s.getDataCancelamento(),
-                s.getMotivoRecusa()
-        );
-    }
-
-
-
-
-
 }

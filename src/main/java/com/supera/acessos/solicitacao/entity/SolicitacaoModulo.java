@@ -20,12 +20,12 @@ public class SolicitacaoModulo {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // quem pediu
+    //quem pediu
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "usuario_id", nullable = false)
     private Usuario solicitante;
 
-    // qual módulo está sendo solicitado
+    //qual módulo esta sendo solicitado
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "modulo_id", nullable = false)
     private Modulo modulo;
