@@ -23,7 +23,11 @@ public class SolicitacaoModuloService {
     private final UsuarioRepository usuarioRepository;
     private final ModuloRepository moduloRepository;
 
-    public SolicitacaoModulo criarSolicitacao(Usuario usuario, CriarSolicitacaoDTO dto) {
+    public SolicitacaoModulo criarSolicitacao(Usuario usuarioJwt, CriarSolicitacaoDTO dto) {
+
+        Usuario usuario = usuarioRepository.findById(usuarioJwt.getId())
+                .orElseThrow(() -> new ApiException("Usuário não encontrado"));
+
 
         //buscar módulo
         Modulo modulo = moduloRepository.findById(dto.moduloId())
@@ -238,7 +242,11 @@ public class SolicitacaoModuloService {
         return nova;
     }
 
-    public SolicitacaoModulo cancelarSolicitacao(Long id, Usuario solicitante) {
+    public SolicitacaoModulo cancelarSolicitacao(Long id, Usuario usuarioJwt) {
+
+        Usuario usuario = usuarioRepository.findById(usuarioJwt.getId())
+                .orElseThrow(() -> new ApiException("Usuário não encontrado"));
+
 
         //buscar a solicitação
         SolicitacaoModulo solicitacao = solicitacaoRepository.findById(id)

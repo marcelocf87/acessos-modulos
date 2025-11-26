@@ -1,24 +1,21 @@
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/supera
+    url: jdbc:postgresql://localhost:5432/acessos_modulos
     username: supera
-    password: supera
+    password: supera123
+    driver-class-name: org.postgresql.Driver
+
   jpa:
     hibernate:
       ddl-auto: update
-    show-sql: false
     properties:
       hibernate:
         format_sql: true
-  jackson:
-    serialization:
-      fail-on-empty-beans: false
+        dialect: org.hibernate.dialect.PostgreSQLDialect
 
-jwt:
-  secret: ${JWT_SECRET:change-this-secret}
-  expiration: 900000 #15 minutos em milissegundos
+  sql:
+    init:
+      mode: always
 
-logging:
-  level:
-    root: INFO
-    org.springframework.security: INFO
+server:
+  port: 8080
