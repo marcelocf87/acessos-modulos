@@ -1,7 +1,9 @@
 package com.supera.acessos.solicitacao.service;
 
+import com.supera.acessos.exceptions.ApiException;
 import com.supera.acessos.modulo.entity.Modulo;
 import com.supera.acessos.solicitacao.dto.CriarSolicitacaoDTO;
+import com.supera.acessos.solicitacao.dto.SolicitacaoResponseDTO;
 import com.supera.acessos.solicitacao.entity.SolicitacaoModulo;
 import com.supera.acessos.solicitacao.entity.StatusSolicitacao;
 import com.supera.acessos.solicitacao.repository.SolicitacaoModuloRepository;
@@ -24,23 +26,23 @@ public class SolicitacaoModuloService {
 
     public SolicitacaoModulo criarSolicitacao(Usuario usuario, CriarSolicitacaoDTO dto) {
 
-        // 1. Buscar módulo
+        //buscar módulo
         Modulo modulo = moduloRepository.findById(dto.moduloId())
-                .orElseThrow(() -> new RuntimeException("Módulo não encontrado"));
+                .orElseThrow(() -> new ApiException("Módulo não encontrado"));
 
         if (!modulo.isAtivo()) {
-            throw new RuntimeException("Módulo inativo");
+            throw new ApiException("Módulo inativo");
         }
 
-        // 2. Validar se o usuário já tem acesso
+        //validar se o usuário já tem acesso
         boolean jaTemAcesso = usuario.getModulosAtivos().stream()
                 .anyMatch(m -> m.getId().equals(modulo.getId()));
 
         if (jaTemAcesso) {
-            throw new RuntimeException("Usuário já possui acesso ativo ao módulo");
+            throw new ApiException("Usuário já possui acesso ativo ao módulo");
         }
 
-        // 3. Verificar se existe solicitação pendente
+        //verificar se existe solicitação pendente
         boolean existePendente = solicitacaoRepository
                 .existsBySolicitanteAndModuloAndStatusIn(
                         usuario,
@@ -53,10 +55,10 @@ public class SolicitacaoModuloService {
                 );
 
         if (existePendente) {
-            throw new RuntimeException("Já existe solicitação pendente para este módulo");
+            throw new ApiException("Já existe solicitação pendente para este módulo");
         }
 
-        // 4. Determinar status inicial
+        //determinar status inicial
         StatusSolicitacao statusInicial;
 
         if (!modulo.isExigeAprovacaoGestor() && !modulo.isExigeAprovacaoSeguranca()) {
@@ -67,15 +69,15 @@ public class SolicitacaoModuloService {
             statusInicial = StatusSolicitacao.AGUARDANDO_SEGURANCA;
         }
 
-        // 5. Criar solicitação
+        //criar solicitação
         SolicitacaoModulo solicitacao = SolicitacaoModulo.builder()
                 .solicitante(usuario)
                 .modulo(modulo)
                 .status(statusInicial)
-                .dataSolicitacao(LocalDateTime.now())  // o nome do campo correto
+                .dataAbertura(LocalDateTime.now())
                 .build();
 
-        // 6. Se foi aprovada automaticamente
+        //se foi aprovada automaticamente
         if (statusInicial == StatusSolicitacao.APROVADA) {
             concederAcesso(usuario, modulo);
             registrarExpiracao(solicitacao, modulo);
@@ -89,17 +91,17 @@ public class SolicitacaoModuloService {
     public SolicitacaoModulo aprovarSolicitacao(Long solicitacaoId, Usuario aprovador) {
 
         SolicitacaoModulo solicitacao = solicitacaoRepository.findById(solicitacaoId)
-                .orElseThrow(() -> new RuntimeException("Solicitação não encontrada"));
+                .orElseThrow(() -> new ApiException("Solicitação não encontrada"));
 
         Modulo modulo = solicitacao.getModulo();
         Usuario usuario = solicitacao.getSolicitante();
 
         if (!modulo.isAtivo()) {
-            throw new RuntimeException("Módulo inativo");
+            throw new ApiException("Módulo inativo");
         }
 
         if (usuario.getModulosAtivos().contains(modulo)) {
-            throw new RuntimeException("Usuário já possui este módulo");
+            throw new ApiException("Usuário já possui este módulo");
         }
 
         switch (solicitacao.getStatus()) {
@@ -132,7 +134,7 @@ public class SolicitacaoModuloService {
                 }
             }
 
-            default -> throw new RuntimeException("Solicitação não pode ser aprovada.");
+            default -> throw new ApiException("Solicitação não pode ser aprovada.");
         }
 
         solicitacao.setDataAprovacao(LocalDateTime.now());
@@ -157,7 +159,7 @@ public class SolicitacaoModuloService {
     public SolicitacaoModulo reprovarSolicitacao(Long id, Usuario aprovador, String motivo) {
 
         SolicitacaoModulo solicitacao = solicitacaoRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Solicitação não encontrada"));
+                .orElseThrow(() -> new ApiException("Solicitação não encontrada"));
 
         switch (solicitacao.getStatus()) {
             case ABERTA, AGUARDANDO_GESTOR, AGUARDANDO_SEGURANCA -> {
@@ -166,7 +168,7 @@ public class SolicitacaoModuloService {
                 solicitacao.setMotivoRecusa(motivo);
             }
 
-            default -> throw new RuntimeException("Solicitação não pode ser reprovada");
+            default -> throw new ApiException("Solicitação não pode ser reprovada");
         }
 
         return solicitacaoRepository.save(solicitacao);
@@ -195,22 +197,22 @@ public class SolicitacaoModuloService {
     public SolicitacaoModulo renovarSolicitacao(Long id, Usuario solicitante) {
 
         SolicitacaoModulo antiga = solicitacaoRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Solicitação não encontrada"));
+                .orElseThrow(() -> new ApiException("Solicitação não encontrada"));
 
         expirarSeNecessario(antiga);
 
         if (antiga.getStatus() != StatusSolicitacao.EXPIRADA) {
-            throw new RuntimeException("Somente solicitações expiradas podem ser renovadas.");
+            throw new ApiException("Somente solicitações expiradas podem ser renovadas.");
         }
 
         Modulo modulo = antiga.getModulo();
 
-        //criar nova solicitação
+        //criar nova solicitacao
         SolicitacaoModulo nova = new SolicitacaoModulo();
         nova.setSolicitante(solicitante);
         nova.setModulo(modulo);
         nova.setStatus(StatusSolicitacao.ABERTA);
-        nova.setDataSolicitacao(LocalDateTime.now());
+        nova.setDataAbertura(LocalDateTime.now());
 
         if (modulo.isExigeAprovacaoGestor()) {
             nova.setStatus(StatusSolicitacao.AGUARDANDO_GESTOR);
@@ -230,16 +232,16 @@ public class SolicitacaoModuloService {
 
         //buscar a solicitação
         SolicitacaoModulo solicitacao = solicitacaoRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Solicitação não encontrada"));
+                .orElseThrow(() -> new ApiException("Solicitação não encontrada"));
 
         //expirar automaticamente qdo necessario
         expirarSeNecessario(solicitacao);
 
-        //verificar status inválidos para cancelamento
+        //verificar status invalidos
         switch (solicitacao.getStatus()) {
 
             case CANCELADA, REPROVADA, EXPIRADA ->
-                    throw new RuntimeException("Solicitação não pode ser cancelada.");
+                    throw new ApiException("Solicitação não pode ser cancelada.");
 
             default -> {
             }
@@ -266,7 +268,7 @@ public class SolicitacaoModuloService {
 
     public List<SolicitacaoModulo> listarSolicitacoesDoUsuario(Usuario usuario) {
 
-        // Busca todas as solicitações do usuário
+        // Busca todas as solicitacoes do usuario
         List<SolicitacaoModulo> lista =
                 solicitacaoRepository.findBySolicitante(usuario);
 
@@ -279,16 +281,40 @@ public class SolicitacaoModuloService {
     public SolicitacaoModulo detalharSolicitacao(Long id, Usuario usuario) {
 
         SolicitacaoModulo sol = solicitacaoRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Solicitação não encontrada"));
+                .orElseThrow(() -> new ApiException("Solicitação não encontrada"));
 
         if (!sol.getSolicitante().getId().equals(usuario.getId())) {
-            throw new RuntimeException("Acesso negado");
+            throw new ApiException("Acesso negado");
         }
 
         expirarSeNecessario(sol);
 
         return sol;
     }
+
+    public SolicitacaoResponseDTO toDTO(SolicitacaoModulo s) {
+        return new SolicitacaoResponseDTO(
+                s.getId(),
+                new UsuarioResumoDTO(
+                        s.getSolicitante().getId(),
+                        s.getSolicitante().getNome(),
+                        s.getSolicitante().getEmail()
+                ),
+                new ModuloResumoDTO(
+                        s.getModulo().getId(),
+                        s.getModulo().getNome(),
+                        s.getModulo().isAtivo()
+                ),
+                s.getStatus(),
+                s.getDataAbertura(),
+                s.getDataAprovacao(),
+                s.getDataReprovacao(),
+                s.getDataExpiracao(),
+                s.getDataCancelamento(),
+                s.getMotivoRecusa()
+        );
+    }
+
 
 
 

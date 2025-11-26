@@ -2,7 +2,7 @@ package com.supera.acessos.solicitacao.controller;
 
 import com.supera.acessos.solicitacao.dto.CriarSolicitacaoDTO;
 import com.supera.acessos.solicitacao.dto.ReprovarSolicitacaoDTO;
-import com.supera.acessos.solicitacao.entity.SolicitacaoModulo;
+import com.supera.acessos.solicitacao.dto.SolicitacaoResponseDTO;
 import com.supera.acessos.solicitacao.service.SolicitacaoModuloService;
 import com.supera.acessos.usuario.entity.Usuario;
 import jakarta.validation.Valid;
@@ -21,68 +21,88 @@ public class SolicitacaoController {
     private final SolicitacaoModuloService solicitacaoService;
 
     @PostMapping
-    public ResponseEntity<SolicitacaoModulo> criar(
+    public ResponseEntity<SolicitacaoResponseDTO> criar(
             @AuthenticationPrincipal Usuario usuario,
             @Valid @RequestBody CriarSolicitacaoDTO dto
     ) {
-        return ResponseEntity.ok(solicitacaoService.criarSolicitacao(usuario, dto));
+        return ResponseEntity.ok(
+                solicitacaoService.toDTO(
+                        solicitacaoService.criarSolicitacao(usuario, dto)
+                )
+        );
     }
 
     @PostMapping("/{id}/aprovar")
-    public ResponseEntity<SolicitacaoModulo> aprovar(
+    public ResponseEntity<SolicitacaoResponseDTO> aprovar(
             @PathVariable Long id,
             @AuthenticationPrincipal Usuario aprovador
     ) {
-        return ResponseEntity.ok(solicitacaoService.aprovarSolicitacao(id, aprovador));
+        return ResponseEntity.ok(
+                solicitacaoService.toDTO(
+                        solicitacaoService.aprovarSolicitacao(id, aprovador)
+                )
+        );
     }
 
     @PostMapping("/{id}/reprovar")
-    public ResponseEntity<SolicitacaoModulo> reprovar(
+    public ResponseEntity<SolicitacaoResponseDTO> reprovar(
             @PathVariable Long id,
             @AuthenticationPrincipal Usuario aprovador,
             @Valid @RequestBody ReprovarSolicitacaoDTO dto
     ) {
         return ResponseEntity.ok(
-                solicitacaoService.reprovarSolicitacao(id, aprovador, dto.motivo())
+                solicitacaoService.toDTO(
+                        solicitacaoService.reprovarSolicitacao(id, aprovador, dto.motivo())
+                )
         );
     }
 
     @PostMapping("/{id}/renovar")
-    public ResponseEntity<SolicitacaoModulo> renovar(
+    public ResponseEntity<SolicitacaoResponseDTO> renovar(
             @PathVariable Long id,
             @AuthenticationPrincipal Usuario usuario
     ) {
         return ResponseEntity.ok(
-                solicitacaoService.renovarSolicitacao(id, usuario)
+                solicitacaoService.toDTO(
+                        solicitacaoService.renovarSolicitacao(id, usuario)
+                )
         );
     }
+
     @PostMapping("/{id}/cancelar")
-    public ResponseEntity<SolicitacaoModulo> cancelar(
+    public ResponseEntity<SolicitacaoResponseDTO> cancelar(
             @PathVariable Long id,
             @AuthenticationPrincipal Usuario usuario
     ) {
         return ResponseEntity.ok(
-                solicitacaoService.cancelarSolicitacao(id, usuario)
+                solicitacaoService.toDTO(
+                        solicitacaoService.cancelarSolicitacao(id, usuario)
+                )
         );
     }
 
     @GetMapping
-    public ResponseEntity<List<SolicitacaoModulo>> listarMinhasSolicitacoes(
+    public ResponseEntity<List<SolicitacaoResponseDTO>> listarMinhasSolicitacoes(
             @AuthenticationPrincipal Usuario usuario
     ) {
-        List<SolicitacaoModulo> lista = solicitacaoService.listarSolicitacoesDoUsuario(usuario);
+        List<SolicitacaoResponseDTO> lista =
+                solicitacaoService.listarSolicitacoesDoUsuario(usuario).stream()
+                        .map(solicitacaoService::toDTO)
+                        .toList();
+
         return ResponseEntity.ok(lista);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<SolicitacaoModulo> detalhar(
+    public ResponseEntity<SolicitacaoResponseDTO> detalhar(
             @PathVariable Long id,
             @AuthenticationPrincipal Usuario usuario
     ) {
-        SolicitacaoModulo sol = solicitacaoService.detalharSolicitacao(id, usuario);
-        return ResponseEntity.ok(sol);
+        return ResponseEntity.ok(
+                solicitacaoService.toDTO(
+                        solicitacaoService.detalharSolicitacao(id, usuario)
+                )
+        );
     }
-
-
 
 }

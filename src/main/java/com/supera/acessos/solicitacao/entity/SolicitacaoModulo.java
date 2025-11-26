@@ -40,6 +40,7 @@ public class SolicitacaoModulo {
     private LocalDateTime dataAprovacao;
     private LocalDateTime dataReprovacao;
     private LocalDateTime dataExpiracao;
+    private LocalDateTime dataCancelamento;
 
     private String motivoRecusa;
 }
