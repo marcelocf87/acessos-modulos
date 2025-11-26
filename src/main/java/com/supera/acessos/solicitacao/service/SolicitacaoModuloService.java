@@ -282,7 +282,7 @@ public class SolicitacaoModuloService {
         SolicitacaoModulo sol = solicitacaoRepository.findById(id)
                 .orElseThrow(() -> new ApiException("Solicitação não encontrada"));
 
-        if (sol.getSolicitante().getId() != usuario.getId()) {
+        if (!Long.valueOf(sol.getSolicitante().getId()).equals(usuario.getId())) {
             throw new ApiException("Solicitação não pertence ao usuário");
         }
 
