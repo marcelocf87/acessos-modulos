@@ -252,6 +252,10 @@ public class SolicitacaoModuloService {
         SolicitacaoModulo solicitacao = solicitacaoRepository.findById(id)
                 .orElseThrow(() -> new ApiException("Solicitação não encontrada"));
 
+        if (solicitacao.getSolicitante().getId() != usuario.getId()) {
+            throw new ApiException("Solicitação não pertence ao usuário");
+        }
+
         //expirar automaticamente qdo necessario
         expirarSeNecessario(solicitacao);
 
@@ -267,11 +271,11 @@ public class SolicitacaoModuloService {
 
         //remover acesso ativo do usuario se aprovado
         if (solicitacao.getStatus() == StatusSolicitacao.APROVADA) {
-            Usuario usuario = solicitacao.getSolicitante();
+            Usuario solicitante = solicitacao.getSolicitante();
             Modulo modulo = solicitacao.getModulo();
 
-            usuario.getModulosAtivos().remove(modulo);
-            usuarioRepository.save(usuario); //persistir no banco
+            solicitante.getModulosAtivos().remove(modulo);
+            usuarioRepository.save(solicitante); //persistir no banco
         }
 
         //atualizar status
